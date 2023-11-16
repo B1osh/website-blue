@@ -1,0 +1,35 @@
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+    width: 400px;
+    height: 400px;
+}
+
+.square {
+    width: 12.5%;
+    height: 50px;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.white {
+    background-color: #f0f0f0;
+}
+
+.black {
+    background-color: #0d4d05;
+}
+
+
+input {
+    margin-top: 10px;
+    padding: 10px;
+    font-size: 16px;
+}
