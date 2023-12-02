@@ -5,13 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../styles/styles.css">
     <title>My Website</title>
+    <script src="../scripts/chess.js"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log('DOMContentLoaded event fired!');
+        const state = new GameState();
+        state.createChessboard(document.getElementById('chessboard-container'));
+    });
+    </script>
+
 </head>
 <body>
     <div width="100%">
     <div class="container"> 
         <div id="chessboard-container"></div>
     </div>
-    <script src="../scripts/chess.js"></script>
     </div>
     <input type="text" placeholder="Your move..">
 </body>
