@@ -8,12 +8,11 @@
     <script src="../scripts/chess.js"></script>
     <script>
     document.addEventListener("DOMContentLoaded", function () {
-        console.log('DOMContentLoaded event fired!');
-        const state = new GameState();
-        state.createChessboard(document.getElementById('chessboard-container'));
+        state = new GameState();
+        chessContainer = document.getElementById('chessboard-container');
+        state.showChessboard(chessContainer);
     });
     </script>
-
 </head>
 <body>
     <div width="100%">
@@ -21,6 +20,6 @@
         <div id="chessboard-container"></div>
     </div>
     </div>
-    <input type="text" placeholder="Your move..">
+    <input type="text" placeholder="Your move.." onkeydown="state.handleMoveInput(this, event, chessContainer)">
 </body>
 </html>

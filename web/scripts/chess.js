@@ -27,6 +27,12 @@ const PieceColour = Object.freeze({
     Gaia: Symbol("gaia")
 });
 
+const oppositeColour = (colour) => {
+    if (colour === PieceColour.White) return PieceColour.Black;
+    if (colour === PieceColour.Black) return PieceColour.White;
+    return PieceColour.Gaia;
+};
+
 class Piece {
 
     constructor(colour, type) {
@@ -141,7 +147,8 @@ class GameState {
 
     }
 
-    createChessboard(container) {
+    showChessboard(container) {
+        container.replaceChildren();
         const squareColour = ['white', 'black'];
         let colourIndex = 0;
 
@@ -162,6 +169,93 @@ class GameState {
             }
             colourIndex++;
         }
+    }
+
+
+    handleMoveInput(textBox, event, container) {
+        
+        if(event.keyCode != 13) return;
+        
+        let moves = textBox.value.split('-');
+        textBox.value = "";
+
+        if (moves.length != 2 || moves[0].length != 2 || moves[1].length != 2) {
+            window.alert("Invalid move!");
+            return;
+        }
+        
+        let start = this.ctoi(moves[0]);
+        let finish = this.ctoi(moves[1]);
+
+        if (start === null || finish === null) {
+            window.alert("Invalid move!");
+            return;
+        }
+
+        if (!this.isLegalMove(start, finish)) {
+            window.alert("Illegal move!");
+            return;
+        }
+
+        this.board[finish[1]][finish[0]] = this.board[start[1]][start[0]];
+        this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
+        this.toMove = oppositeColour(this.toMove);
+        this.showChessboard(container);
+
+    }
+
+    // Coordinates to index : a1 -> [0, 0], e2 -> [4,1], etc.
+    ctoi(coordinate) {
+        let indeces = [coordinate.charCodeAt(0) - 97, 56 - coordinate.charCodeAt(1)];
+
+        if (indeces[0] < 0 || indeces[0] > 7 || indeces[1] < 0 || indeces[1] > 7) return null;
+        return indeces;
+    }
+
+    // Indeces to piece
+    itop(indeces) {
+        return this.board[indeces[1]][indeces[0]];
+    }
+
+    isLegalMove(start, finish) {
+        let startPiece = this.itop(start);
+        let finishPiece = this.itop(finish);
+
+        // Check if start square contains a moveable piece of the right colour and if finish square does not contain friendly piece
+        // Also fails if start square = finish square
+        if (startPiece.colour != this.toMove || startPiece.colour === finishPiece.colour) return false;
+
+        let xDif = Math.abs(finish[0] - start[0]);
+        let yDif = Math.abs(finish[1] - start[1]);
+        if (startPiece.type === PieceType.King) {
+            if (xDif > 1 || yDif > 1) return false;
+        }
+        else if (startPiece.type === PieceType.Queen) {
+            if (xDif != 0 && yDif != 0 && xDif != yDif) return false;
+        }
+        else if (startPiece.type === PieceType.Rook) {
+            console.log(xDif, yDif);
+            if (xDif != 0 && yDif != 0) return false;
+        }
+        else if (startPiece.type === PieceType.Knight) {
+            if ((xDif != 1 || yDif != 2) && (xDif != 2 || yDif != 1)) return false;
+        }
+        else if (startPiece.type === PieceType.Bishop) {
+            if (xDif != yDif) return false;
+        }
+        else if (startPiece.type === PieceType.Pawn) {
+            let c = startPiece.colour === PieceColour.White ? -1 : 1;
+
+            // Only 1 forward and (0 sideways and empty finish or 1 sideways and enemy finish)
+            // 2 forward and 1 square forward empty and 2 squares forward empty and on starting rank
+            if ((finish[1] === start[1] + c && (xDif === 0 && finishPiece.type === PieceType.Empty || xDif === 1 && finishPiece.colour === oppositeColour(startPiece.colour)))
+            || (finish[1] === start[1] + 2*c && this.itop([start[0], start[1] + c]).type === PieceType.Empty && finishPiece.type === PieceType.Empty && xDif === 0 && start[1] === (7+c) % 7)) {console.log("LEGAL")} else {return false;}
+
+        }
+
+        // Doesn't check interfering pieces or if in check yet.
+        return true;
+
     }
 
 }
