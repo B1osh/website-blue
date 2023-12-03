@@ -187,19 +187,7 @@ class GameState {
         let start = this.ctoi(moves[0]);
         let finish = this.ctoi(moves[1]);
 
-        if (start === null || finish === null) {
-            window.alert("Invalid move!");
-            return;
-        }
-
-        if (!this.isLegalMove(start, finish, true)) {
-            window.alert("Illegal move!");
-            return;
-        }
-
-        this.board[finish[1]][finish[0]] = this.board[start[1]][start[0]];
-        this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
-        this.toMove = oppositeColour(this.toMove);
+        this.makeMove(start, finish);
         this.showChessboard(container);
 
     }
@@ -256,16 +244,13 @@ class GameState {
         let kingLocation = this.kingLocation(colour);
         let enemyPieces = this.allPieceLocations(oppositeColour(colour));
 
-        console.log(colour, kingLocation);
-        console.log(enemyPieces);
         for (let i = 0; i < enemyPieces.length; i++) {
-            if (this.isLegalMove(enemyPieces[i], kingLocation, false)) return true;
+            if (this.isLegalMove(enemyPieces[i], kingLocation)) return true;
         }
-        console.log("B");
         return false;
     }
 
-    isLegalMove(start, finish, checkCheck) {
+    isLegalMove(start, finish) {
         let startPiece = this.itop(start);
         let finishPiece = this.itop(finish);
 
@@ -282,7 +267,6 @@ class GameState {
             if (xDif != 0 && yDif != 0 && xDif != yDif || this.isPiecesBetween(start, finish)) return false;
         }
         else if (startPiece.type === PieceType.Rook) {
-            console.log(xDif, yDif);
             if (xDif != 0 && yDif != 0 || this.isPiecesBetween(start, finish)) return false;
         }
         else if (startPiece.type === PieceType.Knight) {
@@ -294,14 +278,14 @@ class GameState {
         else if (startPiece.type === PieceType.Pawn) {
             let c = startPiece.colour === PieceColour.White ? -1 : 1;
 
-            // Only 1 forward and (0 sideways and empty finish or 1 sideways and enemy finish)
+            // Only 1 forward and (0 sideways and empty finish or 1 sideways and (enemy finish or en passant target))
             // 2 forward and 1 square forward empty and 2 squares forward empty and on starting rank
-            if ((finish[1] === start[1] + c && (xDif === 0 && finishPiece.type === PieceType.Empty || xDif === 1 && finishPiece.colour === oppositeColour(startPiece.colour)))
+            if ((finish[1] === start[1] + c && (xDif === 0 && finishPiece.type === PieceType.Empty || xDif === 1 && (finishPiece.colour === oppositeColour(startPiece.colour) || this.enpassantTarget && finish[0] === this.enpassantTarget[0] && finish[1] === this.enpassantTarget[1])))
             || (finish[1] === start[1] + 2*c && !this.isPiecesBetween(start, finish) && finishPiece.type === PieceType.Empty && xDif === 0 && start[1] === (7+c) % 7)) {} else {return false;}
 
         }
 
-        if (!checkCheck) return true;
+
         
         // Check if in check by making move and running isCheck()
         let legalMove = true;
@@ -316,6 +300,39 @@ class GameState {
         this.toMove = oppositeColour(this.toMove);
         return legalMove;
 
+    }
+
+    makeMove(start, finish) {
+
+        // Check entered move was valid
+        if (start === null || finish === null) {
+            window.alert("Invalid move!");
+            return;
+        }
+
+        // Check entered move was legal
+        if (!this.isLegalMove(start, finish)) {
+            window.alert("Illegal move!");
+            return;
+        }
+
+        // Make the move
+        this.board[finish[1]][finish[0]] = this.board[start[1]][start[0]];
+        this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
+
+        // Check for en passant capture
+        if (this.itop(finish).type === PieceType.Pawn && this.enpassantTarget && finish[0] === this.enpassantTarget[0] && finish[1] === this.enpassantTarget[1]) {
+            this.board[start[1]][finish[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
+        }
+        
+        // Check for new en passant target square
+        if (this.itop(finish).type === PieceType.Pawn && Math.abs(start[1] - finish[1]) === 2) {
+            this.enpassantTarget = [start[0], (start[1] + finish[1])/2];
+            console.log(this.enpassantTarget);
+        } else this.enpassantTarget = null;
+
+        // Change who's move it is
+        this.toMove = oppositeColour(this.toMove);
     }
 
 }
