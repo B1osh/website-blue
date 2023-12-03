@@ -192,7 +192,7 @@ class GameState {
             return;
         }
 
-        if (!this.isLegalMove(start, finish)) {
+        if (!this.isLegalMove(start, finish, true)) {
             window.alert("Illegal move!");
             return;
         }
@@ -217,7 +217,55 @@ class GameState {
         return this.board[indeces[1]][indeces[0]];
     }
 
-    isLegalMove(start, finish) {
+    isPiecesBetween(start, finish) {
+        let xDir = Math.sign(finish[0] - start[0])
+        let yDir = Math.sign(finish[1] - start[1])
+
+        let nextSquare = [start[0] + xDir, start[1] + yDir]
+
+        while (nextSquare[0] != finish[0] || nextSquare[1] != finish[1]) {
+            if (this.itop(nextSquare).type != PieceType.Empty) return true;
+            nextSquare = [nextSquare[0] + xDir, nextSquare[1] + yDir];
+        }
+
+        return false;
+    }
+
+    allPieceLocations(colour) {
+        let pieces = []
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                if (this.itop([i, j]).colour === colour) pieces.push([i,j]);
+            }
+        }
+
+        return pieces;
+    }
+
+    kingLocation(colour) {
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                let currentPiece = this.itop([i, j]);
+                if (currentPiece.type === PieceType.King && currentPiece.colour === colour) return [i, j];
+            }
+        }
+        return null;
+    }
+
+    isCheck(colour) {
+        let kingLocation = this.kingLocation(colour);
+        let enemyPieces = this.allPieceLocations(oppositeColour(colour));
+
+        console.log(colour, kingLocation);
+        console.log(enemyPieces);
+        for (let i = 0; i < enemyPieces.length; i++) {
+            if (this.isLegalMove(enemyPieces[i], kingLocation, false)) return true;
+        }
+        console.log("B");
+        return false;
+    }
+
+    isLegalMove(start, finish, checkCheck) {
         let startPiece = this.itop(start);
         let finishPiece = this.itop(finish);
 
@@ -231,17 +279,17 @@ class GameState {
             if (xDif > 1 || yDif > 1) return false;
         }
         else if (startPiece.type === PieceType.Queen) {
-            if (xDif != 0 && yDif != 0 && xDif != yDif) return false;
+            if (xDif != 0 && yDif != 0 && xDif != yDif || this.isPiecesBetween(start, finish)) return false;
         }
         else if (startPiece.type === PieceType.Rook) {
             console.log(xDif, yDif);
-            if (xDif != 0 && yDif != 0) return false;
+            if (xDif != 0 && yDif != 0 || this.isPiecesBetween(start, finish)) return false;
         }
         else if (startPiece.type === PieceType.Knight) {
             if ((xDif != 1 || yDif != 2) && (xDif != 2 || yDif != 1)) return false;
         }
         else if (startPiece.type === PieceType.Bishop) {
-            if (xDif != yDif) return false;
+            if (xDif != yDif || this.isPiecesBetween(start, finish)) return false;
         }
         else if (startPiece.type === PieceType.Pawn) {
             let c = startPiece.colour === PieceColour.White ? -1 : 1;
@@ -249,12 +297,24 @@ class GameState {
             // Only 1 forward and (0 sideways and empty finish or 1 sideways and enemy finish)
             // 2 forward and 1 square forward empty and 2 squares forward empty and on starting rank
             if ((finish[1] === start[1] + c && (xDif === 0 && finishPiece.type === PieceType.Empty || xDif === 1 && finishPiece.colour === oppositeColour(startPiece.colour)))
-            || (finish[1] === start[1] + 2*c && this.itop([start[0], start[1] + c]).type === PieceType.Empty && finishPiece.type === PieceType.Empty && xDif === 0 && start[1] === (7+c) % 7)) {console.log("LEGAL")} else {return false;}
+            || (finish[1] === start[1] + 2*c && !this.isPiecesBetween(start, finish) && finishPiece.type === PieceType.Empty && xDif === 0 && start[1] === (7+c) % 7)) {} else {return false;}
 
         }
 
-        // Doesn't check interfering pieces or if in check yet.
-        return true;
+        if (!checkCheck) return true;
+        
+        // Check if in check by making move and running isCheck()
+        let legalMove = true;
+        this.board[finish[1]][finish[0]] = startPiece;
+        this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
+        this.toMove = oppositeColour(this.toMove);
+        if (this.isCheck(oppositeColour(this.toMove))) legalMove = false;
+        
+        // Return the board back
+        this.board[finish[1]][finish[0]] = finishPiece;
+        this.board[start[1]][start[0]] = startPiece;
+        this.toMove = oppositeColour(this.toMove);
+        return legalMove;
 
     }
 
