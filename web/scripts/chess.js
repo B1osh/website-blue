@@ -79,8 +79,10 @@ class Piece {
 class GameState {
 
     constructor() {
-        //this.readFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        this.readFEN("8/2P5/4k3/8/8/4K3/2p5/8 w - - 0 1");
+        this.readFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        //this.readFEN("8/2P5/4k3/8/8/4K3/2p5/8 w - - 0 1");
+        this.activePiece = null;
+        this.activeSquare = null;
     }
 
     
@@ -154,6 +156,18 @@ class GameState {
         const squareColour = ['white', 'black'];
         let colourIndex = 0;
 
+        const mouseUpHandler = (i, j) => {
+            return () => this.mouseUpFunction([i, j], container);
+        };
+    
+        const mouseDownHandler = (i, j) => {
+            return () => this.mouseDownFunction([i, j], container);
+        };
+
+        
+
+        document.addEventListener('mousemove', function(event) {const floating = document.getElementById('floater'); if (floating) {floating.style.left = event.clientX + 'px'; floating.style.top = event.clientY + 'px'}});
+
         for (let i = 0; i < 8; i++) {
             for (let j = 0; j < 8; j++) {
                 const square = document.createElement('div');
@@ -165,8 +179,13 @@ class GameState {
                     img.classList.add('piece');
                     img.src = '../images/pieces/' + piece.toString() + '.png';
                     img.alt = piece.toUnicode();
+                    img.draggable = false;
                     square.appendChild(img);
                 }
+                square.addEventListener('mouseup', mouseUpHandler(j,i, container));
+                square.addEventListener('mousedown', mouseDownHandler(j,i, container));
+                square.addEventListener("dragstart",(event)=>{event.preventDefault();});
+                square.addEventListener('drop', (event) => {event.preventDefault();});
                 container.appendChild(square);
             }
             colourIndex++;
@@ -204,6 +223,33 @@ class GameState {
         this.makeMove(start, finish, promoteTo);
         this.showChessboard(container);
 
+    }
+
+    mouseUpFunction(square, container) {
+        this.activePiece = null;
+        this.makeMove(this.activeSquare, square);
+        this.activeSquare = null;
+        this.showChessboard(container);
+
+        const floater = document.getElementById('floater');
+        if (floater) container.removeChild(floater);
+    }
+
+    mouseDownFunction(square, container) {
+        let piece = this.itop(square);
+        if (piece.colour != PieceColour.Gaia) {
+            this.activePiece = piece;
+            this.activeSquare = square;
+
+            const floater = document.createElement('img');
+            floater.id = 'floater';
+            floater.classList.add('piece');
+            floater.classList.add('floating');
+            floater.src = '../images/pieces/' + piece.toString() + '.png';
+            floater.alt = piece.toUnicode();
+            floater.draggable = false;
+            container.appendChild(floater);
+        }
     }
 
     // Coordinates to index : a1 -> [0, 0], e2 -> [4,1], etc.
@@ -348,13 +394,13 @@ class GameState {
 
         // Check entered move was valid
         if (start === null || finish === null) {
-            window.alert("Invalid move!");
+            //window.alert("Invalid move!");
             return;
         }
 
         // Check entered move was legal
         if (!this.isLegalMove(start, finish)) {
-            window.alert("Illegal move!");
+            //window.alert("Illegal move!");
             return;
         }
 
@@ -371,7 +417,7 @@ class GameState {
         }
 
         // Check for castling
-        if (startPiece.type === PieceType.King) {
+        if (startPiece.type === PieceType.King && start[0] == 4) {
             // Move the rook
             if (finish[0] === 6) {
                 this.board[finish[1]][5] = new Piece(this.toMove, PieceType.Rook);

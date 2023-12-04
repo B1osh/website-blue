@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mouse Events Example</title>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Get the element by its ID or another suitable selector
+      var myDiv = document.getElementById('myDiv');
+
+      // Attach the mousedown event listener
+      myDiv.addEventListener('mousedown', function () {
+        console.log('Mouse button pressed down!');
+        // Your code for when the mouse button is pressed down goes here
+      });
+
+      // Attach the mouseup event listener
+      myDiv.addEventListener('mouseup', function () {
+        console.log('Mouse button released!');
+        // Your code for when the mouse button is released goes here
+      });
+    });
+  </script>
+</head>
+<body>
+
+<div id="myDiv">
+  Click and hold me
+</div>
+
+</body>
+</html>

@@ -12,6 +12,7 @@ body {
     border: 4px solid black;
     width: 40vw;
     height: 40vw;
+    user-select: none;
 }
 
 .square {
@@ -34,6 +35,17 @@ body {
     height:inherit;
     font-size: 5vw;
     line-height: 5vw;
+}
+
+.floating {
+    left: -100vw;
+    width: 5vw;
+    height: 5vw;
+    position: fixed;
+    display: block;
+    transform: translate(-50%, -50%);
+    opacity: 0.8;
+    pointer-events: none;
 }
 
 
