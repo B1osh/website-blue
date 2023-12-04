@@ -83,6 +83,7 @@ class GameState {
         //this.readFEN("8/2P5/4k3/8/8/4K3/2p5/8 w - - 0 1");
         this.activePiece = null;
         this.activeSquare = null;
+        this.clickedSquare = null;
     }
 
     
@@ -172,7 +173,12 @@ class GameState {
             for (let j = 0; j < 8; j++) {
                 const square = document.createElement('div');
                 square.classList.add('square');
-                square.classList.add(squareColour[(colourIndex++)%2]);
+                if (this.clickedSquare != null && this.clickedSquare[1] === i && this.clickedSquare[0] === j) {
+                    square.style.backgroundColor = '#7E9E7A';
+                    colourIndex++;
+                } else {
+                    square.classList.add(squareColour[(colourIndex++)%2]);
+                }
                 let piece = this.board[i][j]; 
                 if (piece.type != PieceType.Empty) {
                     const img = document.createElement('img');
@@ -227,7 +233,20 @@ class GameState {
 
     mouseUpFunction(square, container) {
         this.activePiece = null;
-        this.makeMove(this.activeSquare, square);
+        if (this.clickedSquare === null && square[0] === this.activeSquare[0] && square[1] === this.activeSquare[1] && this.itop(square).colour === this.toMove) {
+            this.clickedSquare = square;
+        }
+        else if (this.clickedSquare) {
+            this.makeMove(this.clickedSquare, square);
+            if (this.itop(square).colour === this.toMove) {
+                this.clickedSquare = square;
+            } else {
+                this.clickedSquare = null;
+            }
+        }
+        else {
+            this.makeMove(this.activeSquare, square);
+        }
         this.activeSquare = null;
         this.showChessboard(container);
 
