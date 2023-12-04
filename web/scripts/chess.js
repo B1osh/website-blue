@@ -78,7 +78,8 @@ class Piece {
 class GameState {
 
     constructor() {
-        this.readFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        //this.readFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        this.readFEN("r3kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq - 0 1");
     }
 
     
@@ -250,6 +251,26 @@ class GameState {
         return false;
     }
 
+    checkCheck(start, finish) {
+        let check = false;
+        let startPiece = this.itop(start);
+        let finishPiece = this.itop(finish);
+
+        // Make the move
+        this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
+        this.board[finish[1]][finish[0]] = startPiece;
+        // Check for check
+        if (this.isCheck(this.toMove)) check = true;
+        
+        // Restore the board
+        this.board[finish[1]][finish[0]] = finishPiece;
+        this.board[start[1]][start[0]] = startPiece;
+        this.toMove = oppositeColour(this.toMove);
+
+        // Return
+        return check;
+    }
+
     isLegalMove(start, finish) {
         let startPiece = this.itop(start);
         let finishPiece = this.itop(finish);
@@ -261,7 +282,15 @@ class GameState {
         let xDif = Math.abs(finish[0] - start[0]);
         let yDif = Math.abs(finish[1] - start[1]);
         if (startPiece.type === PieceType.King) {
-            if (xDif > 1 || yDif > 1) return false;
+            
+            // Castling
+            // Check piece colour then if it is attempting castling, then check if it is in check or moving through check
+                 if (startPiece.colour === PieceColour.White && this.castlingAvailability[0] && finish[0] === 6 && finish[1] === 7) {if (this.checkCheck(start, start) || this.checkCheck(start, [5,7])) return false;} // White king side
+            else if (startPiece.colour === PieceColour.White && this.castlingAvailability[1] && finish[0] === 2 && finish[1] === 7) {if (this.checkCheck(start, start) || this.checkCheck(start, [3,7])) return false;} // White queen side
+            else if (startPiece.colour === PieceColour.Black && this.castlingAvailability[2] && finish[0] === 6 && finish[1] === 0) {if (this.checkCheck(start, start) || this.checkCheck(start, [5,0])) return false;} // Black king side
+            else if (startPiece.colour === PieceColour.Black && this.castlingAvailability[3] && finish[0] === 2 && finish[1] === 0) {if (this.checkCheck(start, start) || this.checkCheck(start, [3,0])) return false;} // Black queen side
+            // Regular King move
+            else if (xDif > 1 || yDif > 1) return false;
         }
         else if (startPiece.type === PieceType.Queen) {
             if (xDif != 0 && yDif != 0 && xDif != yDif || this.isPiecesBetween(start, finish)) return false;
@@ -316,19 +345,40 @@ class GameState {
             return;
         }
 
+        let startPiece = this.itop(start);
+        let finishPiece = this.itop(finish);
+
         // Make the move
         this.board[finish[1]][finish[0]] = this.board[start[1]][start[0]];
         this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
 
+        // Check for castling
+        if (startPiece.type === PieceType.King) {
+            console.log("A");
+            if (finish[0] === 6) {
+                this.board[finish[1]][5] = new Piece(this.toMove, PieceType.Rook);
+                this.board[finish[1]][7] = new Piece(PieceColour.Gaia, PieceType.Empty);
+            }
+            else if (finish[0] === 2) {
+                this.board[finish[1]][3] = new Piece(this.toMove, PieceType.Rook);
+                this.board[finish[1]][0] = new Piece(PieceColour.Gaia, PieceType.Empty);
+            }
+        }
+
+        // Update castling availability
+        this.castlingAvailability[0] = this.castlingAvailability[0] && (start[0] != 4 || start[1] != 7) && (start[0] != 7 || start[1] != 7) && (finish[0] != 7 || finish[1] != 7);
+        this.castlingAvailability[1] = this.castlingAvailability[1] && (start[0] != 4 || start[1] != 7) && (start[0] != 0 || start[1] != 7) && (finish[0] != 0 || finish[1] != 7);
+        this.castlingAvailability[2] = this.castlingAvailability[2] && (start[0] != 4 || start[1] != 0) && (start[0] != 7 || start[1] != 0) && (finish[0] != 7 || finish[1] != 0);
+        this.castlingAvailability[3] = this.castlingAvailability[3] && (start[0] != 4 || start[1] != 0) && (start[0] != 0 || start[1] != 0) && (finish[0] != 0 || finish[1] != 0);
+
         // Check for en passant capture
-        if (this.itop(finish).type === PieceType.Pawn && this.enpassantTarget && finish[0] === this.enpassantTarget[0] && finish[1] === this.enpassantTarget[1]) {
+        if (startPiece.type === PieceType.Pawn && this.enpassantTarget && finish[0] === this.enpassantTarget[0] && finish[1] === this.enpassantTarget[1]) {
             this.board[start[1]][finish[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
         }
         
         // Check for new en passant target square
-        if (this.itop(finish).type === PieceType.Pawn && Math.abs(start[1] - finish[1]) === 2) {
+        if (startPiece.type === PieceType.Pawn && Math.abs(start[1] - finish[1]) === 2) {
             this.enpassantTarget = [start[0], (start[1] + finish[1])/2];
-            console.log(this.enpassantTarget);
         } else this.enpassantTarget = null;
 
         // Change who's move it is
