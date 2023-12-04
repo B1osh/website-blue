@@ -11,6 +11,7 @@ const PieceType = Object.freeze({
     BadEgg: Symbol("badegg")
 });
 
+
 const pieceValue = (pieceType) => {
     return pieceType == PieceType.King ? 0 :
     pieceType == PieceType.Queen ? 9 :
@@ -79,7 +80,7 @@ class GameState {
 
     constructor() {
         //this.readFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        this.readFEN("r3kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq - 0 1");
+        this.readFEN("8/2P5/4k3/8/8/4K3/2p5/8 w - - 0 1");
     }
 
     
@@ -177,7 +178,9 @@ class GameState {
         
         if(event.keyCode != 13) return;
         
-        let moves = textBox.value.split('-');
+        let split = textBox.value.split('=');
+
+        let moves = split[0].split('-');
         textBox.value = "";
 
         if (moves.length != 2 || moves[0].length != 2 || moves[1].length != 2) {
@@ -188,7 +191,17 @@ class GameState {
         let start = this.ctoi(moves[0]);
         let finish = this.ctoi(moves[1]);
 
-        this.makeMove(start, finish);
+        // Check for promotion
+        let promoteTo = PieceType.Queen;
+        if (split.length === 2) {
+            promoteTo =
+            split[1] === "R" ? PieceType.Rook :
+            split[1] === "N" ? PieceType.Knight :
+            split[1] === "B" ? PieceType.Bishop :
+            PieceType.Queen;
+        }
+
+        this.makeMove(start, finish, promoteTo);
         this.showChessboard(container);
 
     }
@@ -331,7 +344,7 @@ class GameState {
 
     }
 
-    makeMove(start, finish) {
+    makeMove(start, finish, promoteTo=PieceType.Queen) {
 
         // Check entered move was valid
         if (start === null || finish === null) {
@@ -352,9 +365,14 @@ class GameState {
         this.board[finish[1]][finish[0]] = this.board[start[1]][start[0]];
         this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
 
+        // Check for promotion
+        if (startPiece.type === PieceType.Pawn && (finish[1] === 0 || finish[1] === 7)) {
+                this.board[finish[1]][finish[0]] = new Piece(this.toMove, promoteTo);
+        }
+
         // Check for castling
         if (startPiece.type === PieceType.King) {
-            console.log("A");
+            // Move the rook
             if (finish[0] === 6) {
                 this.board[finish[1]][5] = new Piece(this.toMove, PieceType.Rook);
                 this.board[finish[1]][7] = new Piece(PieceColour.Gaia, PieceType.Empty);
