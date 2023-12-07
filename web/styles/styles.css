@@ -22,6 +22,15 @@ body {
     vertical-align: top;
 }
 
+.circle {
+    width: 2vw;
+    height: 2vw;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    position: absolute;
+    transform: translate(1.5vw, 1.5vw);
+}
+
 .white {
     background-color: #f0f0f0;
 }

@@ -169,16 +169,33 @@ class GameState {
 
         document.addEventListener('mousemove', function(event) {const floating = document.getElementById('floater'); if (floating) {floating.style.left = event.clientX + 'px'; floating.style.top = event.clientY + 'px'}});
 
+        let selectedSquare = this.activeSquare || this.clickedSquare;
         for (let i = 0; i < 8; i++) {
             for (let j = 0; j < 8; j++) {
                 const square = document.createElement('div');
                 square.classList.add('square');
+                
+                // Colour square if it has been clicked on
                 if (this.clickedSquare != null && this.clickedSquare[1] === i && this.clickedSquare[0] === j) {
                     square.style.backgroundColor = '#7E9E7A';
                     colourIndex++;
                 } else {
                     square.classList.add(squareColour[(colourIndex++)%2]);
                 }
+
+                // Show legal moves
+                if (selectedSquare != null) {
+                    let moves = this.getLegalMoves(selectedSquare);
+                    for (const move of moves) {
+                        if (move[0] === j && move[1] === i) {
+                            const circle = document.createElement('div');
+                            circle.className = 'circle';
+                            square.appendChild(circle);
+                            break;
+                        }
+                    }
+                }
+
                 let piece = this.board[i][j]; 
                 if (piece.type != PieceType.Empty) {
                     const img = document.createElement('img');
@@ -233,7 +250,7 @@ class GameState {
 
     mouseUpFunction(square, container) {
         this.activePiece = null;
-        if (this.clickedSquare === null && square[0] === this.activeSquare[0] && square[1] === this.activeSquare[1] && this.itop(square).colour === this.toMove) {
+        if (this.clickedSquare === null && this.activeSquare != null && square[0] === this.activeSquare[0] && square[1] === this.activeSquare[1] && this.itop(square).colour === this.toMove) {
             this.clickedSquare = square;
         }
         else if (this.clickedSquare) {
@@ -256,6 +273,11 @@ class GameState {
 
     mouseDownFunction(square, container) {
         let piece = this.itop(square);
+
+        if (piece.colour === this.toMove) {
+            this.clickedSquare = null;
+            this.showChessboard(container);
+        }
         if (piece.colour != PieceColour.Gaia) {
             this.activePiece = piece;
             this.activeSquare = square;
@@ -269,6 +291,8 @@ class GameState {
             floater.draggable = false;
             container.appendChild(floater);
         }
+
+        
     }
 
     // Coordinates to index : a1 -> [0, 0], e2 -> [4,1], etc.
@@ -285,6 +309,11 @@ class GameState {
     }
 
     isPiecesBetween(start, finish) {
+        let xDif = Math.abs(finish[0] - start[0]);
+        let yDif = Math.abs(finish[1] - start[1]);
+        if (xDif != 0 && yDif != 0 && xDif != yDif) return false;
+
+        
         let xDir = Math.sign(finish[0] - start[0])
         let yDir = Math.sign(finish[1] - start[1])
 
@@ -296,6 +325,17 @@ class GameState {
         }
 
         return false;
+    }
+
+    getLegalMoves(start) {
+        let moves = []
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                if (this.isLegalMove(start, [i,j])) moves.push([i,j]);
+            }
+        }
+
+        return moves;
     }
 
     allPieceLocations(colour) {
