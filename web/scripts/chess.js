@@ -253,7 +253,7 @@ class GameState {
         if (this.clickedSquare === null && this.activeSquare != null && square[0] === this.activeSquare[0] && square[1] === this.activeSquare[1] && this.itop(square).colour === this.toMove) {
             this.clickedSquare = square;
         }
-        else if (this.clickedSquare) {
+        else if (this.clickedSquare != null) {
             this.makeMove(this.clickedSquare, square);
             if (this.itop(square).colour === this.toMove) {
                 this.clickedSquare = square;
@@ -364,7 +364,7 @@ class GameState {
         let enemyPieces = this.allPieceLocations(oppositeColour(colour));
 
         for (let i = 0; i < enemyPieces.length; i++) {
-            if (this.isLegalMove(enemyPieces[i], kingLocation)) return true;
+            if (this.isLegalMove(enemyPieces[i], kingLocation, false)) return true;
         }
         return false;
     }
@@ -378,24 +378,24 @@ class GameState {
         this.board[start[1]][start[0]] = new Piece(PieceColour.Gaia, PieceType.Empty);
         this.board[finish[1]][finish[0]] = startPiece;
         // Check for check
-        if (this.isCheck(this.toMove)) check = true;
+        if (this.isCheck(startPiece.colour)) check = true;
         
         // Restore the board
         this.board[finish[1]][finish[0]] = finishPiece;
         this.board[start[1]][start[0]] = startPiece;
-        this.toMove = oppositeColour(this.toMove);
+        //this.toMove = oppositeColour(this.toMove);
 
         // Return
         return check;
     }
 
-    isLegalMove(start, finish) {
+    isLegalMove(start, finish, checkFlag = true) {
         let startPiece = this.itop(start);
         let finishPiece = this.itop(finish);
 
         // Check if start square contains a moveable piece of the right colour and if finish square does not contain friendly piece
         // Also fails if start square = finish square
-        if (startPiece.colour != this.toMove || startPiece.colour === finishPiece.colour) return false;
+        if ((startPiece.colour != this.toMove && checkFlag) || startPiece.colour === finishPiece.colour) return false;
 
         let xDif = Math.abs(finish[0] - start[0]);
         let yDif = Math.abs(finish[1] - start[1]);
@@ -403,10 +403,10 @@ class GameState {
             
             // Castling
             // Check piece colour then if it is attempting castling, then check if it is in check or moving through check
-                 if (startPiece.colour === PieceColour.White && this.castlingAvailability[0] && finish[0] === 6 && finish[1] === 7) {if (this.checkCheck(start, start) || this.checkCheck(start, [5,7])) return false;} // White king side
-            else if (startPiece.colour === PieceColour.White && this.castlingAvailability[1] && finish[0] === 2 && finish[1] === 7) {if (this.checkCheck(start, start) || this.checkCheck(start, [3,7])) return false;} // White queen side
-            else if (startPiece.colour === PieceColour.Black && this.castlingAvailability[2] && finish[0] === 6 && finish[1] === 0) {if (this.checkCheck(start, start) || this.checkCheck(start, [5,0])) return false;} // Black king side
-            else if (startPiece.colour === PieceColour.Black && this.castlingAvailability[3] && finish[0] === 2 && finish[1] === 0) {if (this.checkCheck(start, start) || this.checkCheck(start, [3,0])) return false;} // Black queen side
+                 if (startPiece.colour === PieceColour.White && this.castlingAvailability[0] && finish[0] === 6 && finish[1] === 7) {if (this.isCheck(this.toMove) || this.checkCheck(start, [5,7]) || this.isPiecesBetween(start,finish)) return false;} // White king side
+            else if (startPiece.colour === PieceColour.White && this.castlingAvailability[1] && finish[0] === 2 && finish[1] === 7) {if (this.isCheck(this.toMove) || this.checkCheck(start, [3,7]) || this.isPiecesBetween(start,finish)) return false;} // White queen si || this.isPiecesBetween(start,finish)de
+            else if (startPiece.colour === PieceColour.Black && this.castlingAvailability[2] && finish[0] === 6 && finish[1] === 0) {if (this.isCheck(this.toMove) || this.checkCheck(start, [5,0]) || this.isPiecesBetween(start,finish)) return false;} // Black king side
+            else if (startPiece.colour === PieceColour.Black && this.castlingAvailability[3] && finish[0] === 2 && finish[1] === 0) {if (this.isCheck(this.toMove) || this.checkCheck(start, [3,0]) || this.isPiecesBetween(start,finish)) return false;} // Black queen side
             // Regular King move
             else if (xDif > 1 || yDif > 1) return false;
         }
@@ -432,7 +432,7 @@ class GameState {
 
         }
 
-
+        if (!checkFlag) return true;
         
         // Check if in check by making move and running isCheck()
         let legalMove = true;
@@ -506,6 +506,34 @@ class GameState {
 
         // Change who's move it is
         this.toMove = oppositeColour(this.toMove);
+
+        // Update move counts
+        if (this.toMove === PieceColour.White) this.moveCounter++;
+
+        if (finishPiece.colour != PieceColour.Gaia || startPiece.type === PieceType.Pawn) {
+            this.fiftymoveCounter = 0;
+        }
+        else {
+            this.fiftymoveCounter++;
+        }
+
+        // Check for game over
+        this.checkGameOver();
+    }
+
+    checkGameOver() {
+        let pieces = this.allPieceLocations(this.toMove);
+        for (let i = 0; i < pieces.length; i++) {
+            let moves = this.getLegalMoves(pieces[i]);
+            if (moves.length > 0) return;
+        }
+
+        if (this.isCheck(this.toMove)) {
+            setTimeout(function() { alert('Checkmate!'); }, 1);
+        }else{
+            setTimeout(function() { alert('Stalemate!'); }, 1);
+        }
+
     }
 
 }
